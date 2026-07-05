@@ -1,0 +1,9 @@
+The onboard unit shall calculate the braking curve.
+ 
+The train shall transmit position reports.
+ 
+The onboard equipment should supervise train speed.
+ 
+This section describes the ETCS architecture.
+ 
+The train must initiate emergency braking if the speed limit is exceeded.
