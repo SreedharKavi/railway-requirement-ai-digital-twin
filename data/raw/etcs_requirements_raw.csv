@@ -1,0 +1,5 @@
+Requirement_ID,Requirement_Text,Source,Section,Domain
+REQ_00001,"The onboard unit shall calculate the braking curve.",Subset-026,3.13.1,Braking
+REQ_00002,"The onboard equipment shall supervise train speed.",Subset-026,3.13.2,Speed Supervision
+REQ_00003,"The train shall transmit position reports.",Subset-026,3.13.3,Communication
+ 
