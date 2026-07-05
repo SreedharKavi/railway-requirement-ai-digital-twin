@@ -3,19 +3,19 @@ import re
 ENTITY_PATTERNS = {
  
     "SPEED":
-        r"\b\d+(?:\.\d+)?\s*(?:km/h|kmh|mph)\b",
+        r"\b\d+(?:\.\d+)?\s*(?:km\s*/\s*h|km/h|kmh|mph)\b",
  
     "DISTANCE":
-        r"\b\d+(?:\.\d+)?\s*m\b|\b\d+(?:\.\d+)?\s*km\b(?!/h)",
+        r"\b\d+(?:\.\d+)?\s*(?:m|meter|meters|metre|metres)\b|\b\d+(?:\.\d+)?\s*km\b(?!/h)",
  
     "TIME":
-        r"\b\d+(?:\.\d+)?\s*(?:s|sec|seconds|min|minutes|hour|hours)\b",
+        r"\b\d+(?:\.\d+)?\s*(?:s|sec|secs|second|seconds|min|mins|minute|minutes|hour|hours)\b",
  
     "LEVEL":
         r"\bLevel\s*[123]\b",
  
     "MODE":
-        r"\b(FS|OS|SR|SH|LS|PT|SB|TR)\b",
+        r"\b(?:FS|OS|SR|SH|LS|PT|SB|TR)\b",
  
     "RBC":
         r"\bRBC\b",
@@ -24,11 +24,73 @@ ENTITY_PATTERNS = {
         r"\bbalise(?:\s+group)?\b",
  
     "MOVEMENT_AUTHORITY":
-        r"\bMovement Authority\b|\bMA\b"
+        r"\bMovement Authority\b|\bMA\b",
+ 
+    "GRADIENT":
+        r"\bgradient\s*[-+]?\d+(?:\.\d+)?\b|\b\d+(?:\.\d+)?\s*‰\b",
+ 
+    "PERCENTAGE":
+        r"\b\d+(?:\.\d+)?\s*%\b"
 }
  
  
+def normalize_entity(entity_name, value):
+    """
+    Normalize entity values to ensure consistency.
+    """
+ 
+    value = value.strip()
+ 
+    value = re.sub(
+        r"\s+",
+        " ",
+        value
+    )
+ 
+    if entity_name == "RBC":
+        return "RBC"
+ 
+    elif entity_name == "MOVEMENT_AUTHORITY":
+ 
+        if value.upper() == "MA":
+            return "MA"
+ 
+        return "Movement Authority"
+ 
+    elif entity_name == "LEVEL":
+ 
+        match = re.search(
+            r"(\d+)",
+            value
+        )
+ 
+        if match:
+            return f"Level {match.group(1)}"
+ 
+        return value
+ 
+    elif entity_name == "BALISE":
+ 
+        value = value.lower()
+ 
+        if value == "balise groups":
+            return "balise group"
+ 
+        return value
+ 
+    elif entity_name == "MODE":
+ 
+        return value.upper()
+ 
+    return value
+ 
+ 
 def extract_entities(text):
+ 
+    if not text:
+        return {}
+ 
+    text = str(text)
  
     entities = {}
  
@@ -40,10 +102,23 @@ def extract_entities(text):
             flags=re.IGNORECASE
         )
  
-        values = [
-            match.group(0)
-            for match in matches
-        ]
+        values = []
+ 
+        for match in matches:
+ 
+            value = match.group(0)
+ 
+            value = normalize_entity(
+                entity_name,
+                value
+            )
+ 
+            values.append(value)
+ 
+        # Remove duplicates while preserving order
+        values = list(
+            dict.fromkeys(values)
+        )
  
         if values:
             entities[entity_name] = values
@@ -63,14 +138,24 @@ if __name__ == "__main__":
  
         "The balise group shall contain linking information.",
  
-        "The train shall enter FS mode after receiving MA from the RBC."
+        "The train shall enter FS mode after receiving MA from the RBC.",
+ 
+        "The braking distance shall be 1200 m with gradient 12.",
+ 
+        "The train shall run at 90% braking performance."
     ]
+ 
+    print("\n" + "=" * 60)
+    print("RAILWAY NER TEST")
+    print("=" * 60)
  
     for sample in samples:
  
         print("\nRequirement:")
         print(sample)
  
-        print("Entities:")
+        print("\nEntities:")
         print(extract_entities(sample))
+ 
+        print("-" * 60)
  
