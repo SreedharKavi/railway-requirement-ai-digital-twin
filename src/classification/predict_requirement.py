@@ -3,19 +3,38 @@ import joblib
 MODEL_FILE = "models/svm_classifier.pkl"
 VECTORIZER_FILE = "models/tfidf_vectorizer.pkl"
  
-model = joblib.load(MODEL_FILE)
-vectorizer = joblib.load(VECTORIZER_FILE)
+ 
+model = joblib.load(
+    MODEL_FILE
+)
+ 
+vectorizer = joblib.load(
+    VECTORIZER_FILE
+)
+ 
+ 
+print("\nRailway Requirement Classifier")
+print("Type 'exit' to quit")
+ 
  
 while True:
  
-    text = input("\nEnter Requirement:\n")
+    text = input(
+        "\nEnter Requirement:\n"
+    )
  
-    vec = vectorizer.transform([text])
+    if text.lower() == "exit":
+        break
  
-    prediction = model.predict(vec)
+    vec = vectorizer.transform(
+        [text]
+    )
+ 
+    prediction = model.predict(
+        vec
+    )
  
     print(
-        "\nPredicted Category:",
-        prediction[0]
+        f"\nPredicted Category: {prediction[0]}"
     )
  
