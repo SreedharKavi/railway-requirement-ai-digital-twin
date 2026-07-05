@@ -1,33 +1,39 @@
-"""
-ETCS Requirement Extractor
- 
-Version: 1.0
- 
-Purpose:
----------
-Extract candidate requirement statements from ETCS documents.
- 
-Rules:
-- Keep sentences containing:
-    shall
-    should
-    must
- 
-Output:
----------
-data/raw/etcs_requirements_raw.csv
-"""
- 
 import re
-import pandas as pd
 from pathlib import Path
  
+import pandas as pd
+from pypdf import PdfReader
  
-INPUT_FILE = "docs/etcs/etcs_text.txt"
+ 
+PDF_FOLDER = "docs/etcs"
 OUTPUT_FILE = "data/raw/etcs_requirements_raw.csv"
  
  
+def extract_text_from_pdf(pdf_file):
+ 
+    text = ""
+ 
+    try:
+ 
+        reader = PdfReader(pdf_file)
+ 
+        for page in reader.pages:
+ 
+            page_text = page.extract_text()
+ 
+            if page_text:
+                text += page_text + "\n"
+ 
+    except Exception as e:
+ 
+        print(f"Error reading {pdf_file}: {e}")
+ 
+    return text
+ 
+ 
 def split_sentences(text):
+ 
+    text = text.replace("\n", " ")
  
     sentences = re.split(r'(?<=[.!?])\s+', text)
  
@@ -36,82 +42,78 @@ def split_sentences(text):
  
 def is_requirement(sentence):
  
-    keywords = ["shall", "should", "must"]
+    keywords = [
+        "shall",
+        "should",
+        "must"
+    ]
  
-    sentence_lower = sentence.lower()
+    sentence = sentence.lower()
  
-    return any(word in sentence_lower for word in keywords)
- 
- 
-def extract_requirements(text):
- 
-    requirements = []
- 
-    sentences = split_sentences(text)
- 
-    counter = 1
- 
-    for sentence in sentences:
- 
-        sentence = sentence.strip()
- 
-        if len(sentence) < 10:
-            continue
- 
-        if is_requirement(sentence):
- 
-            requirement = {
-                "Requirement_ID":
-                    f"REQ_{counter:05d}",
- 
-                "Requirement_Text":
-                    sentence,
- 
-                "Source":
-                    "Subset-026",
- 
-                "Section":
-                    "",
- 
-                "Domain":
-                    ""
-            }
- 
-            requirements.append(requirement)
- 
-            counter += 1
- 
-    return requirements
+    return any(k in sentence for k in keywords)
  
  
 def main():
  
-    input_path = Path(INPUT_FILE)
+    requirements = []
  
-    if not input_path.exists():
+    counter = 1
  
-        print(f"File not found: {INPUT_FILE}")
-        return
+    pdf_files = Path(PDF_FOLDER).glob("*.pdf")
  
-    with open(INPUT_FILE, "r", encoding="utf-8") as file:
+    for pdf_file in pdf_files:
  
-        text = file.read()
+        print(f"Processing {pdf_file.name}")
  
-    requirements = extract_requirements(text)
+        text = extract_text_from_pdf(pdf_file)
+ 
+        sentences = split_sentences(text)
+ 
+        for sentence in sentences:
+ 
+            sentence = sentence.strip()
+ 
+            if len(sentence) < 20:
+                continue
+ 
+            if is_requirement(sentence):
+ 
+                requirements.append({
+                    "Requirement_ID":
+                        f"REQ_{counter:05d}",
+ 
+                    "Requirement_Text":
+                        sentence,
+ 
+                    "Source":
+                        pdf_file.name,
+ 
+                    "Section":
+                        "",
+ 
+                    "Domain":
+                        ""
+                })
+ 
+                counter += 1
  
     df = pd.DataFrame(requirements)
+ 
+    df.drop_duplicates(
+        subset=["Requirement_Text"],
+        inplace=True
+    )
  
     df.to_csv(
         OUTPUT_FILE,
         index=False
     )
  
-    print("-" * 50)
-    print(f"Requirements found: {len(df)}")
-    print(f"Saved to: {OUTPUT_FILE}")
-    print("-" * 50)
+    print("\nCompleted")
+    print(f"Requirements Extracted: {len(df)}")
+    print(f"Saved: {OUTPUT_FILE}")
  
  
 if __name__ == "__main__":
- 
     main()
+ 
